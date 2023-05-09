@@ -1,12 +1,14 @@
 #ifndef PARSE_MATRIX_H
 #define PARSE_MATRIX_H
 #include <limits.h>
+#include <math.h>
+#include <omp.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
 
 typedef struct csr_matrix {
     int nrows;
@@ -150,8 +152,93 @@ void print_csr_matrix(csr_matrix matrix) {
     printf("=======================END OF VALUES========================\n");
 }
 
-float* generate_random_b(size_t size) {
-    float* b = malloc(size * sizeof(float));
+float *conjugate_gradient(csr_matrix *matrix, float *b) {
+    float *x, *r, *p, *Ap;
+    float alpha, beta, rsold, rsnew;
+    int n = matrix->ncols;
+    int max_iter = 1000;
+    float tol = 1e-6;
+
+    x = (float *)malloc(n * sizeof(float));
+    r = (float *)malloc(n * sizeof(float));
+    p = (float *)malloc(n * sizeof(float));
+    Ap = (float *)malloc(n * sizeof(float));
+
+    // Set initial guess x to zero
+    for (int i = 0; i < n; i++) {
+        x[i] = 0;
+    }
+
+    // Calculate initial residual r = b - Ax
+    for (int i = 0; i < n; i++) {
+        r[i] = b[i];
+        for (int j = matrix->row_ptr[i]; j < matrix->row_ptr[i + 1]; j++) {
+            r[i] -= matrix->values[j] * x[matrix->col_idx[j]];
+        }
+        p[i] = r[i];
+    }
+
+    rsold = 0;
+    for (int i = 0; i < n; i++) {
+        rsold += r[i] * r[i];
+    }
+
+    for (int k = 0; k < max_iter; k++) {
+        // Calculate Ap = A * p using sparse matrix-vector multiplication
+        for (int i = 0; i < n; i++) {
+            Ap[i] = 0;
+            for (int j = matrix->row_ptr[i]; j < matrix->row_ptr[i + 1]; j++) {
+                Ap[i] += matrix->values[j] * p[matrix->col_idx[j]];
+            }
+        }
+
+        // Calculate alpha = rsold / p' * Ap
+        alpha = 0;
+        for (int i = 0; i < n; i++) {
+            alpha += p[i] * Ap[i];
+        }
+        alpha = rsold / alpha;
+
+        // Update solution x = x + alpha * p
+        for (int i = 0; i < n; i++) {
+            x[i] += alpha * p[i];
+        }
+
+        // Update residual r = r - alpha * Ap
+        for (int i = 0; i < n; i++) {
+            r[i] -= alpha * Ap[i];
+        }
+
+        rsnew = 0;
+        for (int i = 0; i < n; i++) {
+            rsnew += r[i] * r[i];
+        }
+
+        // Check for convergence
+        if (sqrt(rsnew) < tol) {
+            break;
+        }
+
+        // Calculate beta = rsnew / rsold
+        beta = rsnew / rsold;
+
+        // Update direction p = r + beta * p
+        for (int i = 0; i < n; i++) {
+            p[i] = r[i] + beta * p[i];
+        }
+
+        rsold = rsnew;
+    }
+
+    free(r);
+    free(p);
+    free(Ap);
+
+    return x;
+}
+
+float *generate_random_b(size_t size) {
+    float *b = malloc(size * sizeof(float));
     if (b == NULL) {
         return NULL;
     }

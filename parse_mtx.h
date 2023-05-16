@@ -244,10 +244,18 @@ float *generate_random_b(size_t size) {
     }
 
     srand(time(NULL));
-    float range = 20000.0;
-    for (size_t i = 0; i < size; i++) {
-        float r = ((float)rand() / (float)RAND_MAX) * range - 10000.0;
-        b[i] = r;
+
+    for (size_t i = 0; i < size; i += 2) {
+        float u1 = ((float)rand() + 1) / ((float)RAND_MAX + 2);
+        float u2 = ((float)rand() + 1) / ((float)RAND_MAX + 2);
+
+        float z1 = sqrt(-2.0 * log(u1)) * cos(2.0 * M_PI * u2);
+        float z2 = sqrt(-2.0 * log(u1)) * sin(2.0 * M_PI * u2);
+
+        b[i] = z1;
+        if (i + 1 < size) {
+            b[i + 1] = z2;
+        }
     }
 
     return b;

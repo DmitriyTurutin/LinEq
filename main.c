@@ -3,7 +3,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
+
+uint64_t nanos() {
+  struct timespec start;
+  clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+  return (uint64_t)start.tv_sec*1000000000 + (uint64_t)start.tv_nsec;
+}
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -17,11 +24,16 @@ int main(int argc, char *argv[]) {
     csr_matrix matrix = new_csr(filename);
     // print_csr_matrix(matrix);
     float *b = generate_random_b(matrix.nrows);
+    uint64_t start = nanos();
     float *x = conjugate_gradient(&matrix, b);
+    uint64_t end = nanos();
+
+    printf("\n\n%ld\n\n", end-start);
 
     for (int i = 0; i < 10; ++i) {
-        printf("%f ", x[i]);
+        printf("%e ", x[i]);
     }
+    printf("\n");
 
     /// TEST IF RIGHT
     csr_matrix test_matrix = {.nrows = 3,
@@ -34,7 +46,7 @@ int main(int argc, char *argv[]) {
     float test_b[] = {3, 7, 2.5};
     float *test_x = conjugate_gradient(&test_matrix, test_b);
     for (int i = 0; i < 3; ++i) {
-        printf("%f ", test_x[i]);
+        printf("%e ", test_x[i]);
     }
     // Free memory
     free(x);

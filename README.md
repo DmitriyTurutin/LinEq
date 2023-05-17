@@ -31,3 +31,32 @@ Repeat until convergence:
 In step 3a, the matrix-vector multiplication can be efficiently computed using the CSR format, which stores the non-zero entries of the matrix in three arrays: the values array, the column indices array, and the row pointer array. The algorithm only needs to access the non-zero entries of A and can skip over the zero entries, which can greatly reduce the computational cost.
 
 The CG algorithm is guaranteed to converge to the exact solution in at most n iterations, where n is the dimension of the matrix A. However, the rate of convergence can depend on the condition number of the matrix, which is the ratio of the largest to the smallest eigenvalue. If the condition number is large, the CG algorithm may converge slowly, and preconditioning techniques can be used to improve the convergence rate.
+
+
+
+AVX
+---
+*what is the difference between pd, ps, sd, ss?*
+
+#### Load 
+`__m256 _mm256_load_ps (float const * mem_addr)` 
+
+Load 256-bits (composed of 8 packed single-precision (32-bit) 
+floating-point elements) from memory into dst. 
+mem_addr *must be aligned* on a 32-byte boundary or a 
+general-protection exception may be generated.
+
+
+`__m256 _mm256_loadu_ps (float const * mem_addr)`
+
+Load 256-bits (composed of 8 packed single-precision (32-bit) 
+floating-point elements) from memory into dst. 
+mem_addr does *not need to be aligned* on any 
+particular boundary.
+
+#### Brodcast 
+
+`__m128 _mm_broadcast_ss (float const * mem_addr)`
+
+Broadcast a single-precision (32-bit) floating-point element 
+from memory to all elements of dst.
